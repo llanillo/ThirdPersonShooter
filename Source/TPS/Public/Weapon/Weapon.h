@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Character/TPSCharacter.h"
 #include "GameFramework/Actor.h"
+#include "UI/TPSHUD.h"
 #include "Weapon.generated.h"
 
 class USkeletalMeshComponent;
@@ -44,25 +45,26 @@ class TPS_API AWeapon : public AActor
 
 	UPROPERTY(EditAnywhere, Category = Properties)
 	TSubclassOf<ABulletShell> BulletShellClass;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = Sockets, meta = (AllowPrivateAccess = true))
 	FName MuzzleSocketName = "MuzzleFlash";
 
 	UPROPERTY(BlueprintReadOnly, Category = Sockets, meta = (AllowPrivateAccess = true))
 	FName AmmoSocketName = "AmmoEject";
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Properties, meta=(AllowPrivateAccess = true))
+	FCrossHairHUD CrossHairHUD;
+	
 public:
 	
 	UFUNCTION(BlueprintCallable)
 	void ShowPickupWidget(bool bShowWidget) const;
 
 protected:
-	
 	UFUNCTION()
 	virtual void OnPickup(ATPSCharacter* Character);
 
 private:
-
 	UFUNCTION()
 	void OnRep_WeaponState();
 
@@ -83,8 +85,10 @@ protected:
 public:
 
 	FORCEINLINE FName GetMuzzleSocketName() const { return MuzzleSocketName; }
-	
+
 	FORCEINLINE EWeaponState GetWeaponState() const { return WeaponState; }
 
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+	
+	FORCEINLINE FCrossHairHUD GetCrossHairHUD() const { return CrossHairHUD; }
 };

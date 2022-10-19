@@ -1,6 +1,7 @@
 ﻿#include "Components/WeaponComponent.h"
 #include "Weapon/Weapon.h"
 #include "Character/TPSCharacter.h"
+#include "Character/TPSPlayerController.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -30,6 +31,27 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UWeaponComponent, WeaponEquipped);
 	DOREPLIFETIME(UWeaponComponent, bIsAiming);
+}
+
+void UWeaponComponent::SetCrossHairsHUD(float DeltaTime)
+{
+	if (!Character || !PlayerController || !PlayerHUD) return;
+
+	if (WeaponEquipped)
+	{
+		FCrossHairHUD CrossHairHUD;
+		CrossHairHUD.CrossHairCenter = WeaponEquipped->GetCrossHairHUD().CrossHairCenter;
+		CrossHairHUD.CrossHairBottom = WeaponEquipped->GetCrossHairHUD().CrossHairBottom;
+		CrossHairHUD.CrossHairLeft = WeaponEquipped->GetCrossHairHUD().CrossHairLeft;
+		CrossHairHUD.CrossHairRight = WeaponEquipped->GetCrossHairHUD().CrossHairRight;
+		CrossHairHUD.CrossHairTop = WeaponEquipped->GetCrossHairHUD().CrossHairTop;
+		PlayerHUD->SetCrossHairHUD(CrossHairHUD);
+	}
+	else
+	{
+		constexpr FCrossHairHUD CrossHairHUD {nullptr, nullptr, nullptr, nullptr, nullptr};
+		PlayerHUD->SetCrossHairHUD(CrossHairHUD);
+	}
 }
 
 void UWeaponComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceTargetHit)
@@ -80,7 +102,7 @@ void UWeaponComponent::TraceLineFromCrosshair(FHitResult& OutHitResult)
 	{
 		OutHitResult.ImpactPoint = End;
 	}
-	
+
 	UE_LOG(LogTemp, Warning, TEXT("Vector : %s"), *OutHitResult.ToString());
 	DrawDebugSphere(World, OutHitResult.ImpactPoint, 32.f, 12, FColor::Yellow);
 }

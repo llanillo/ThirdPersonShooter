@@ -1,13 +1,14 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "UI/TPSHUD.h"
 #include "WeaponComponent.generated.h"
 
 #define TRACE_LENGTH 80000.f
 
 class AWeapon;
 class ATPSCharacter;
+class ATPSPlayerController;
 
 UCLASS(ClassGroup=(TPS), meta=(BlueprintSpawnableComponent))
 class TPS_API UWeaponComponent : public UActorComponent
@@ -29,6 +30,12 @@ class TPS_API UWeaponComponent : public UActorComponent
 	UPROPERTY()
 	ATPSCharacter* Character;
 
+	UPROPERTY()
+	ATPSPlayerController* PlayerController;
+
+	UPROPERTY()
+	ATPSHUD* PlayerHUD;
+	
 protected:
 
 	UFUNCTION(NetMulticast, Reliable)
@@ -36,6 +43,8 @@ protected:
 	
 	UFUNCTION(Server, Reliable)
 	virtual void ServerFire(const FVector_NetQuantize& TraceTargetHit);
+
+	virtual void SetCrossHairsHUD(float DeltaTime);
 	
 public:
 
@@ -74,6 +83,10 @@ public:
 	void StartAiming(bool bAiming);
 
 	FORCEINLINE void SetCharacter(ATPSCharacter* NewCharacter) { Character = NewCharacter; }
+	
+	FORCEINLINE void SetCharacterController(ATPSPlayerController* Controller) { PlayerController = Controller; }
+
+	FORCEINLINE void SetCharacterHUD(ATPSHUD* HUD) { PlayerHUD = HUD; }
 
 	FORCEINLINE bool IsWeaponEquipped() const { return WeaponEquipped != nullptr; }
 	

@@ -1,6 +1,7 @@
 #include "TPS/Public/Character/TPSCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Character/TPSAnimInstance.h"
+#include "Character/TPSPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WeaponComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -63,7 +64,15 @@ void ATPSCharacter::PostInitializeComponents()
 
 	if (WeaponComponent)
 	{
-		WeaponComponent->SetCharacter(this);
+		if (ATPSPlayerController* PlayerController = Cast<ATPSPlayerController>(GetController()))
+		{
+			if (ATPSHUD* HUD = Cast<ATPSHUD>(PlayerController->GetHUD()))
+			{
+				WeaponComponent->SetCharacter(this);
+				WeaponComponent->SetCharacterController(PlayerController);
+				WeaponComponent->SetCharacterHUD(HUD);
+			}
+		}
 	}
 }
 
