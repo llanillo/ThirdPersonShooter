@@ -21,7 +21,7 @@ enum class EWeaponState: uint8
 	Ews_Max UMETA(DisplayName = "DefaultMax")
 };
 
-UCLASS()
+UCLASS(ClassGroup=TPS)
 class TPS_API AWeapon : public AActor
 {
 	GENERATED_BODY()
