@@ -74,16 +74,11 @@ private:
 
 	FRotator LastRotationDelta;
 
-	
 	float RotationInterpolationSpeed;
 	
 	void SetMovementAnimation(float DeltaSeconds);
 
-	// void SetAnimationYawOffset(const float DeltaSeconds);
-	
 	void SetWeaponAnimation(float DeltaSeconds);
 	
-	// void SetAnimationAim();
-
 	void SetLeftHandInverseKinematics();
 };

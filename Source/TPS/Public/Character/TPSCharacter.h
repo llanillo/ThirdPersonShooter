@@ -92,7 +92,7 @@ public:
 	
 	ATPSCharacter();
 
-	void PlayFireMontage();
+	void PlayFireMontage() const;
 	
 	virtual void EquipWeapon(AWeapon* Weapon);
 
@@ -104,7 +104,7 @@ public:
 
 	AWeapon* GetWeaponEquipped() const;
 
-	// void SetWeapon(AWeapon* Weapon);
+	FVector GetHitTarget() const;
 
 	FORCEINLINE float GetBaseWalkSpeed() const { return BaseWalkSpeed; }
 	
@@ -114,5 +114,8 @@ public:
 
 	FORCEINLINE float GetAimOffsetPitch() const { return AimOffsetPitch; }
 	
-	FORCEINLINE ETurnInPlace GetTurnInPlace() const { return TurnInPlace; } 
+	FORCEINLINE ETurnInPlace GetTurnInPlace() const { return TurnInPlace; }
+
+	FORCEINLINE UCameraComponent* GetCameraComponent() const { return FollowCamera; }
+
 };

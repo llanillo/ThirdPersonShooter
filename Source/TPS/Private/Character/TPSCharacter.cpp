@@ -42,6 +42,10 @@ ATPSCharacter::ATPSCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->PostProcessSettings.bOverride_DepthOfFieldFocalDistance = true;
+	FollowCamera->PostProcessSettings.DepthOfFieldFocalDistance = 10000.f; // Removes blurriness from far away objects
+	FollowCamera->PostProcessSettings.bOverride_DepthOfFieldFstop = true; // Removes blurriness from close objects
+	FollowCamera->PostProcessSettings.DepthOfFieldFstop = 32.f;
 
 	WeaponComponent = CreateDefaultSubobject<UWeaponComponent>(TEXT("CombatComponent"));
 	WeaponComponent->SetIsReplicated(true);
@@ -50,6 +54,16 @@ ATPSCharacter::ATPSCharacter()
 void ATPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (ATPSPlayerController* PlayerController = Cast<ATPSPlayerController>(GetController()))
+	{
+		WeaponComponent->SetCharacterController(PlayerController);
+		
+		if (ATPSHUD* HUD = Cast<ATPSHUD>(PlayerController->GetHUD()))
+		{
+			WeaponComponent->SetCharacterHUD(HUD);
+		}
+	}
 }
 
 void ATPSCharacter::Tick(float DeltaTime)
@@ -64,16 +78,10 @@ void ATPSCharacter::PostInitializeComponents()
 
 	if (WeaponComponent)
 	{
-		if (ATPSPlayerController* PlayerController = Cast<ATPSPlayerController>(GetController()))
-		{
-			if (ATPSHUD* HUD = Cast<ATPSHUD>(PlayerController->GetHUD()))
-			{
-				WeaponComponent->SetCharacter(this);
-				WeaponComponent->SetCharacterController(PlayerController);
-				WeaponComponent->SetCharacterHUD(HUD);
-			}
-		}
+		WeaponComponent->SetCharacter(this);
 	}
+
+	// }
 }
 
 void ATPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -252,11 +260,11 @@ void ATPSCharacter::SetAimOffset(float DeltaTime)
 
 void ATPSCharacter::TurningInPlace(float DeltaTime)
 {
-	if (AimOffsetYaw > 45.f)
+	if (AimOffsetYaw > 35.f)
 	{
 		TurnInPlace = ETurnInPlace::ETIP_Right;
 	}
-	else if (AimOffsetYaw < -90.f)
+	else if (AimOffsetYaw < -50.f)
 	{
 		TurnInPlace = ETurnInPlace::ETIP_Left;
 	}
@@ -274,7 +282,7 @@ void ATPSCharacter::TurningInPlace(float DeltaTime)
 	}
 }
 
-void ATPSCharacter::PlayFireMontage()
+void ATPSCharacter::PlayFireMontage() const
 {
 	if (!WeaponComponent || !FireWeaponMontage || !WeaponComponent->IsWeaponEquipped()) return;
 
@@ -308,4 +316,9 @@ AWeapon* ATPSCharacter::GetWeaponEquipped() const
 {
 	if (!WeaponComponent) return nullptr;
 	return WeaponComponent->GetWeaponEquipped();
+}
+
+FVector ATPSCharacter::GetHitTarget() const
+{
+	return WeaponComponent == nullptr ? FVector{} : WeaponComponent->GetHitTarget();
 }

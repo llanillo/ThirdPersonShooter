@@ -27,7 +27,7 @@ class TPS_API AWeapon : public AActor
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, Category = Properties)
+	UPROPERTY(VisibleAnywhere, Category = Components)
 	USkeletalMeshComponent* WeaponMesh;
 
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, BlueprintReadOnly, Category = Weapon,
@@ -46,36 +46,39 @@ class TPS_API AWeapon : public AActor
 	UPROPERTY(EditAnywhere, Category = Properties)
 	TSubclassOf<ABulletShell> BulletShellClass;
 
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = CrossHairs, meta=(AllowPrivateAccess = true))
+	FCrossHairHUD CrossHairHUD;
+	
 	UPROPERTY(BlueprintReadOnly, Category = Sockets, meta = (AllowPrivateAccess = true))
 	FName MuzzleSocketName = "MuzzleFlash";
 
 	UPROPERTY(BlueprintReadOnly, Category = Sockets, meta = (AllowPrivateAccess = true))
 	FName AmmoSocketName = "AmmoEject";
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Properties, meta=(AllowPrivateAccess = true))
-	FCrossHairHUD CrossHairHUD;
+	UPROPERTY(EditAnywhere, Category = Properties)
+	float ZoomFov = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = Properties)
+	float ZoomInterpSpeed = 20.f;
 	
+private:
+
+	UFUNCTION()
+	void OnRep_WeaponState();
+
+protected:
+	
+	UFUNCTION()
+	virtual void OnPickup(ATPSCharacter* Character);
+
 public:
 	
 	UFUNCTION(BlueprintCallable)
 	void ShowPickupWidget(bool bShowWidget) const;
 
+	
 protected:
-	UFUNCTION()
-	virtual void OnPickup(ATPSCharacter* Character);
-
-private:
-	UFUNCTION()
-	void OnRep_WeaponState();
-
-public:
-	AWeapon();
-
-	virtual void Fire(const FVector& HitTarget);
-
-	void SetWeaponState(const EWeaponState State);
-
-protected:
+	
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
@@ -84,6 +87,12 @@ protected:
 
 public:
 
+	AWeapon();
+
+	virtual void Fire(const FVector& HitTarget);
+
+	void SetWeaponState(const EWeaponState State);
+
 	FORCEINLINE FName GetMuzzleSocketName() const { return MuzzleSocketName; }
 
 	FORCEINLINE EWeaponState GetWeaponState() const { return WeaponState; }
@@ -91,4 +100,8 @@ public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	
 	FORCEINLINE FCrossHairHUD GetCrossHairHUD() const { return CrossHairHUD; }
+
+	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	
+	FORCEINLINE float GetZoomFOV() const { return ZoomFov; }
 };

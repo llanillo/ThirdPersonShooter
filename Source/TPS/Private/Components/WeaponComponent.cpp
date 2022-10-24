@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Net/UnrealNetwork.h"
+#include "Camera/CameraComponent.h"
 
 UWeaponComponent::UWeaponComponent()
 {
@@ -17,12 +18,28 @@ UWeaponComponent::UWeaponComponent()
 void UWeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Character)
+	{
+		DefaultFOV = Character->GetCameraComponent()->FieldOfView;
+		CurrentFOV = DefaultFOV;
+	}
 }
 
 void UWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                      FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (Character && Character->IsLocallyControlled())
+	{
+		FHitResult HitResult;
+		TraceLineFromCrosshair(HitResult);
+		HitTarget = HitResult.ImpactPoint;
+
+		InterpFOV(DeltaTime);
+		SetCrossHairsHUD(DeltaTime);
+	}
 }
 
 void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -33,25 +50,43 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UWeaponComponent, bIsAiming);
 }
 
-void UWeaponComponent::SetCrossHairsHUD(float DeltaTime)
+void UWeaponComponent::SetCrossHairsHUD(const float DeltaTime)
 {
 	if (!Character || !PlayerController || !PlayerHUD) return;
 
+	FCrossHairHUD CrossHairHUD;
 	if (WeaponEquipped)
 	{
-		FCrossHairHUD CrossHairHUD;
 		CrossHairHUD.CrossHairCenter = WeaponEquipped->GetCrossHairHUD().CrossHairCenter;
 		CrossHairHUD.CrossHairBottom = WeaponEquipped->GetCrossHairHUD().CrossHairBottom;
 		CrossHairHUD.CrossHairLeft = WeaponEquipped->GetCrossHairHUD().CrossHairLeft;
 		CrossHairHUD.CrossHairRight = WeaponEquipped->GetCrossHairHUD().CrossHairRight;
 		CrossHairHUD.CrossHairTop = WeaponEquipped->GetCrossHairHUD().CrossHairTop;
-		PlayerHUD->SetCrossHairHUD(CrossHairHUD);
 	}
 	else
 	{
-		constexpr FCrossHairHUD CrossHairHUD {nullptr, nullptr, nullptr, nullptr, nullptr};
-		PlayerHUD->SetCrossHairHUD(CrossHairHUD);
+		CrossHairHUD = {nullptr, nullptr, nullptr, nullptr, nullptr};
 	}
+
+	const FVector2D WalkSpeedRange{0.f, Character->GetMovementComponent()->GetMaxSpeed()};
+	const FVector2D VelocityMultiplierRange{0.f, 1.f};
+	FVector Velocity = Character->GetVelocity();
+	Velocity.Z = 0.f;
+
+	const float CrossHairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange,
+	                                                                        Velocity.Size());
+
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		CrossHairAirFactor = FMath::FInterpTo(CrossHairAirFactor, 2.f, DeltaTime, 2.f);
+	}
+	else
+	{
+		CrossHairAirFactor = FMath::FInterpTo(CrossHairAirFactor, 0.f, DeltaTime, 5.f);
+	}
+
+	CrossHairHUD.Spread = CrossHairAirFactor + CrossHairVelocityFactor;
+	PlayerHUD->SetCrossHairHUD(CrossHairHUD);
 }
 
 void UWeaponComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceTargetHit)
@@ -79,6 +114,26 @@ void UWeaponComponent::EndFire()
 	bIsFiring = false;
 }
 
+void UWeaponComponent::InterpFOV(float DeltaTime)
+{
+	if (!WeaponEquipped) return;
+
+	if (bIsAiming)
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, WeaponEquipped->GetZoomFOV(), DeltaTime,
+		                              WeaponEquipped->GetZoomInterpSpeed());
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, WeaponEquipped->GetZoomInterpSpeed());
+	}
+
+	if (Character && Character->GetCameraComponent())
+	{
+		Character->GetCameraComponent()->SetFieldOfView(CurrentFOV);
+	}
+}
+
 void UWeaponComponent::TraceLineFromCrosshair(FHitResult& OutHitResult)
 {
 	const UWorld* World = GetWorld();
@@ -87,16 +142,16 @@ void UWeaponComponent::TraceLineFromCrosshair(FHitResult& OutHitResult)
 	FVector2D ViewportSize;
 	GEngine->GameViewport->GetViewportSize(ViewportSize);
 
-	FVector2D CrosshairLocation = FVector2D{ViewportSize.X / 2.f, ViewportSize.Y / 2.f};
-	FVector CrosshairWorldPosition;
-	FVector CrosshairWorldDirection;
+	const FVector2D CrossHairLocation = FVector2D{ViewportSize.X / 2.f, ViewportSize.Y / 2.f};
+	FVector CrossHairWorldPosition;
+	FVector CrossHairWorldDirection;
 
-	if (!UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(World, 0), CrosshairLocation,
-	                                              CrosshairWorldDirection, CrosshairWorldDirection))
+	if (!UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(World, 0), CrossHairLocation,
+	                                              CrossHairWorldPosition, CrossHairWorldDirection))
 		return;
 
-	const FVector Start = CrosshairWorldPosition;
-	const FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
+	const FVector Start = CrossHairWorldPosition;
+	const FVector End = Start + CrossHairWorldDirection * TRACE_LENGTH;
 
 	if (!GetWorld()->LineTraceSingleByChannel(OutHitResult, Start, End, ECC_Visibility))
 	{

@@ -21,6 +21,9 @@ class TPS_API UWeaponComponent : public UActorComponent
 	UPROPERTY(VisibleInstanceOnly, ReplicatedUsing = OnRep_WeaponEquipped, Category = Weapon)
 	AWeapon* WeaponEquipped;
 
+	UPROPERTY(BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+	FVector HitTarget;
+	
 	UPROPERTY(BlueprintReadOnly, Replicated, Category = Weapon, meta = (AllowPrivateAccess = true))
 	bool bIsAiming;
 
@@ -35,7 +38,18 @@ class TPS_API UWeaponComponent : public UActorComponent
 
 	UPROPERTY()
 	ATPSHUD* PlayerHUD;
+
+private:
 	
+	UFUNCTION()
+	void TraceLineFromCrosshair(FHitResult& OutHitResult);
+	
+	UFUNCTION(Server, Reliable)
+	void ServerStartAiming(bool bAiming);
+
+	UFUNCTION()
+	void OnRep_WeaponEquipped(AWeapon* LastWeapon);
+
 protected:
 
 	UFUNCTION(NetMulticast, Reliable)
@@ -56,14 +70,13 @@ public:
 
 private:
 
-	UFUNCTION()
-	void TraceLineFromCrosshair(FHitResult& OutHitResult);
+	float CrossHairAirFactor;
 	
-	UFUNCTION(Server, Reliable)
-	void ServerStartAiming(bool bAiming);
+	float DefaultFOV;
+	
+	float CurrentFOV;
 
-	UFUNCTION()
-	void OnRep_WeaponEquipped(AWeapon* LastWeapon);
+	void InterpFOV(float DeltaTime);
 
 protected:
 	
@@ -93,5 +106,7 @@ public:
 	FORCEINLINE bool IsAiming() const { return bIsAiming; }
 	
 	FORCEINLINE AWeapon* GetWeaponEquipped() const { return WeaponEquipped; }
+
+	FORCEINLINE const FVector& GetHitTarget() const { return HitTarget; }
 
 };

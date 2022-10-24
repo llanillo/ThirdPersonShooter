@@ -10,12 +10,19 @@ USTRUCT(BlueprintType)
 struct FCrossHairHUD
 {
 	GENERATED_BODY();
-	
+
+	UPROPERTY(EditAnywhere, Category = CrossHair)
 	UTexture2D* CrossHairCenter;
+	UPROPERTY(EditAnywhere, Category = CrossHair)
 	UTexture2D* CrossHairTop;
+	UPROPERTY(EditAnywhere, Category = CrossHair)
 	UTexture2D* CrossHairBottom;
+	UPROPERTY(EditAnywhere, Category = CrossHair)
 	UTexture2D* CrossHairLeft;
+	UPROPERTY(EditAnywhere, Category = CrossHair)
 	UTexture2D* CrossHairRight;
+
+	float Spread;
 };
 
 UCLASS(ClassGroup=TPS)
@@ -25,6 +32,9 @@ class TPS_API ATPSHUD : public AHUD
 
 	UPROPERTY(EditAnywhere, Category = Weapon)
 	FCrossHairHUD CrossHairHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Spread, meta = (AllowPrivateAccess = true))
+	float CrossHairSpreadMax = 16.f;
 
 public:
 
@@ -40,7 +50,7 @@ private:
 
 	void DrawWeaponCrossHair(const FVector2D ViewportSize);
 
-	void DrawCrossHair(const FVector2D Position, UTexture2D* Texture);
+	void DrawCrossHair(const FVector2D Position, UTexture2D* Texture, FVector2D Spread);
 	
 public:
 

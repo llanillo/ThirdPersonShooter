@@ -38,6 +38,12 @@ void UTPSAnimInstance::SetLeftHandInverseKinematics()
 		                                           FRotator::ZeroRotator, OutBoneLocation, OutBoneRotation);
 		LeftHandTransform.SetLocation(OutBoneLocation);
 		LeftHandTransform.SetRotation(FQuat{OutBoneRotation});
+
+		// TODO Remove lines below
+		FTransform MuzzleFlash = EquippedWeapon->GetWeaponMesh()->GetSocketTransform("MuzzleFlash", RTS_World);
+		FVector MuzzleDirection{FRotationMatrix(MuzzleFlash.GetRotation().Rotator()).GetUnitAxis(EAxis::X)};
+		DrawDebugLine(GetWorld(), MuzzleFlash.GetLocation(), MuzzleFlash.GetLocation() + MuzzleDirection * 1000.f,
+		              FColor::Red, false, 15.f);
 	}
 }
 
